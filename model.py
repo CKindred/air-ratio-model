@@ -7,12 +7,14 @@ from time import perf_counter
 import csv
 from os import mkdir
 
+#used optionally to load parameters
 def load_params():
     A = pd.read_csv('models/ar/A.csv', header=None).to_numpy()
     B = pd.read_csv('models/ar/B.csv', header=None).to_numpy()
     output_weights = pd.read_csv('models/ar/output_weights.csv', header=None).to_numpy()
     return A, B, output_weights
 
+#used to generate new parameters
 def init_params():
     # TODO consider adding input weights
     #input_weights = np.random.normal(size=[input_size, hidden_size])
@@ -21,7 +23,7 @@ def init_params():
     B = np.random.normal(size=[hidden_size])
     return A, B
 
-def hidden_nodes(X):  # be careful with variable name
+def hidden_nodes(X):  # calculates hidden layer output
     output = [[0]*hidden_size for i in range(len(X))]
     for i in range(len(X)):
         for j in range(hidden_size):
@@ -32,9 +34,9 @@ def hidden_nodes(X):  # be careful with variable name
             output[i][j] = temp
     return np.array(output)
 
+#this function trains the network
 def train():
     start = perf_counter()
-    #training model
     G = hidden_nodes(X_train)
     K = np.dot(G.T, G)
     K = np.linalg.pinv(K)
@@ -43,9 +45,14 @@ def train():
     end = perf_counter()
     print('Time taken to train in seconds: ', end-start)
     return output_weights
+
+#start of program
+
+#read data in from CSV files
 X = pd.read_csv("data/X_AR.csv")
 y = pd.read_csv("data/y_AR.csv")
 
+#format data
 y = y[2:]
 scaler = MinMaxScaler()
 X = pd.DataFrame(scaler.fit_transform(X))
@@ -65,7 +72,7 @@ else:
     A, B = init_params()
     output_weights = train()
 
-
+#used optionally to save parameters
 def save_params(version):
     mkdir('./models/'+version)
     name = 'models/' + version + '/output_weights.csv'
@@ -86,13 +93,13 @@ def save_params(version):
     with file:
         writer.writerows(B.reshape(-1, 1))
 
-
+#generates predictions
 def predict(X):
     out = hidden_nodes(X)
     out = np.dot(out, output_weights)
     return out
 
-
+#function for removing outliers - don't worry about this
 def remove_outliers(a):
     mean = np.mean(a)
     sd = np.std(a)
@@ -117,6 +124,7 @@ writer = csv.writer(file)
 with file:
     writer.writerows(prediction)
 
+#calculates loss
 prediction_no_outliers = remove_outliers(prediction)
 total = X_test.shape[0]
 loss = 0
